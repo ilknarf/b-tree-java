@@ -27,7 +27,7 @@ public class BTree {
     }
 
     public static void main(String[] args) {
-        var b = new BTree(2);
+        var b = new BTree(3);
         System.out.println(b);
         b.insert(5);
         System.out.println(b);
@@ -175,19 +175,26 @@ class BTreeNode {
     @Override
     public String toString() {
         var sb = new StringBuilder();
+        sb.append('[');
 
         for (int i = 0; i < size; i++) {
+            sb.append(" (");
             if (keys != null && keys[i] != null) {
                 sb.append(keys[i].toString());
+
             }
+            sb.append(") ");
 
             sb.append(vals[i]);
         }
 
+        sb.append(" (");
         if (size > 0 && keys != null && keys[size] != null) {
             sb.append(keys[size].toString());
         }
+        sb.append(") ");
 
+        sb.append(']');
         return sb.toString();
     }
 }
