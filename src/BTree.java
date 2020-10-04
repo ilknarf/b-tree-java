@@ -1,3 +1,5 @@
+import java.util.Arrays;
+
 /**
  * The BTree program implements a basic non-concurrent B-Tree using nodes.
  * Sample inserts and deletes are given in the main method. Should be the
@@ -86,30 +88,28 @@ public class BTree {
     }
 
     public static void main(String[] args) {
-        var b = new BTree(3);
+        var b = new BTree(8);
+        final int length = 10000;
 
-        System.out.println(b);
+        var vals = new int[length];
 
-        b.insert(5);
-        System.out.println(b);
+        System.out.println("begin insertion");
+        for (int i = 0; i < length; i++) {
+            int val = (int) (Math.random() * 10) + 1;
+            b.insert(val);
+            vals[i] = val;
+        }
+        System.out.println("finished insertion");
 
-        b.insert(3);
-        System.out.println(b);
+        System.out.println("begin missing check:");
+        for (int i = 0; i < length; i++) {
+            if (!b.contains(vals[i])) {
+                System.out.println(vals[i] + " missing");
+            }
+        }
 
-        b.insert(2);
-        System.out.println(b);
-
-        b.insert(3);
-        System.out.println(b);
-
-        b.delete(3);
-        System.out.println(b);
-
-        b.delete(3);
-        System.out.println(b);
-
-        System.out.println(b.contains(2));
-        System.out.println(b.contains(4));
+        System.out.println("finished missing check");
+        System.out.println("done");
     }
 }
 
@@ -139,7 +139,7 @@ class BTreeNode {
         keys = new BTreeNode[order + 1];
 
         childrenCount = 0;
-        parentIndex = -1;
+        parentIndex = 0;
 
         minSize = (order - 1) / 2;
     }
@@ -159,7 +159,7 @@ class BTreeNode {
 
         keys = new BTreeNode[order + 1];
         childrenCount = 0;
-        parentIndex = -1;
+        parentIndex = 0;
 
         minSize = (order - 1) / 2;
     }
@@ -231,8 +231,7 @@ class BTreeNode {
 
     /**
      * Inserts a new value (with its left and right children) into the BTreeNode,
-     * and restructures if necessary. Unsafe for direct insertion, as it overwrites
-     * adjacent keys.
+     * and restructures if necessary.
      *
      * @param val the value to insert
      * @param left the left side children
@@ -242,10 +241,8 @@ class BTreeNode {
     protected BTreeNode insert(int val, BTreeNode left, BTreeNode right) {
         int index;
 
-        if (left != null) {
+        if (left != null){
             index = left.parentIndex;
-        } else if (right != null){
-            index = right.parentIndex - 1;
         } else {
             index = bisect(val);
         }
@@ -256,7 +253,7 @@ class BTreeNode {
 
         // make space for new value and key
         int lengthToCopy = size - index;
-        if (size - index > 0) {
+        if (lengthToCopy > 0) {
             System.arraycopy(vals, index, vals, index + 1, lengthToCopy);
             if (keys != null) {
                 System.arraycopy(keys, index, keys, index + 1, lengthToCopy + 1);
@@ -273,6 +270,7 @@ class BTreeNode {
             left.parentIndex = index;
             childrenCount++;
         }
+
         if (right != null) {
             right.setParent(this);
             right.parentIndex = index + 1;
@@ -283,32 +281,34 @@ class BTreeNode {
             int median = size / 2;
 
             var leftVals = new int[size];
-            var rightVals = new int[size];
             int leftLength = median;
-            int rightLength = size - median - 1;
-
             System.arraycopy(vals, 0, leftVals, 0, leftLength);
+
+            var rightVals = new int[size];
+            int rightLength = size - median - 1;
             System.arraycopy(vals, median + 1, rightVals, 0, rightLength);
 
             var leftChildren = new BTreeNode[keys.length];
-            var rightChildren = new BTreeNode[keys.length];
-
             System.arraycopy(keys, 0, leftChildren, 0, leftLength + 1);
+
+            var rightChildren = new BTreeNode[keys.length];
             System.arraycopy(keys, median + 1, rightChildren, 0, rightLength + 1);
 
             // build new split child nodes
             var newLeft = new BTreeNode(size, leftVals, leftChildren, leftLength);
-            newLeft.parentIndex = this.parentIndex;
             var newRight = new BTreeNode(size, rightVals, rightChildren, rightLength);
-            newLeft.parentIndex = this.parentIndex + 1;
 
+            size--;
             if (parent == null) {
-                setParent(new BTreeNode(size));
+                setParent(new BTreeNode(vals.length));
                 parent.insert(vals[median], newLeft, newRight);
                 return parent;
             }
 
             // insert new split index into parent;
+
+            newLeft.parentIndex = parentIndex;
+            newRight.parentIndex = parentIndex + 1;
             return parent.insert(vals[median], newLeft, newRight);
         }
 
@@ -446,18 +446,18 @@ class BTreeNode {
             var leftAdjacent = parent.keys[parentIndex - 1];
 
             if (leftAdjacent.size > minSize) {
-                insert(parent.vals[parentIndex]);
                 parent.vals[parentIndex] = leftAdjacent.vals[size - 1];
                 leftAdjacent.delete(size - 1);
+                insert(parent.vals[parentIndex]);
             }
         }
 
         var rightAdjacent = parent.keys[parentIndex + 1];
         if (rightAdjacent.size > minSize) {
-            insert(parent.vals[parentIndex]);
-            parent.vals[parentIndex] = rightAdjacent.vals[0];
 
+            parent.vals[parentIndex] = rightAdjacent.vals[0];
             rightAdjacent.delete(0);
+            insert(parent.vals[parentIndex]);
         } else {
             merge(rightAdjacent, parent.vals[parentIndex]);
             System.arraycopy(parent.vals, parentIndex + 2, parent.vals, parentIndex + 1, parent.vals.length - parentIndex - 2);
