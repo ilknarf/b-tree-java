@@ -1,11 +1,32 @@
+/**
+ * The BTree program implements a basic non-concurrent B-Tree using nodes.
+ * Sample inserts and deletes are given in the main method. Should be the
+ * main point of interface for users, as the insertion and deletion logic
+ * is handled behind-the-scenes.
+ *
+ * @author Frank Li
+ * @version 1.0
+ * @since 2020-04-10
+ */
 public class BTree {
     BTreeNode root;
 
+    /**
+     * Initializes a new BTree object of a provided order;
+     *
+     * @param order the order of the BTree object. Must be
+     *              greater than 2.
+     */
     BTree(int order) {
-        assert(order > 1);
+        assert(order > 2);
         root = new BTreeNode(order);
     }
 
+    /**
+     * Inserts a value `val` into the BTree.
+     *
+     * @param val the value to be inserted
+     */
     public void insert(int val) {
         var curr = root;
 
@@ -21,14 +42,29 @@ public class BTree {
         }
     }
 
+    /**
+     * Checks if a value is contained within the B-Tree.
+     *
+     * @param val the value to be checked
+     * @return returns true if the value is in the B-Tree, false otherwise.
+     */
     public boolean contains(int val) {
         var loc = root.find(val);
 
-        return loc.node != null;
+        return loc != null;
     }
 
+    /**
+     * Deletes an occurrence of a value if if exists in the B-Tree
+     *
+     * @param val the value to be deleted
+     */
     public void delete(int val) {
         var loc = root.find(val);
+
+        if (loc == null) {
+            return;
+        }
 
         var node = loc.node;
         var index = loc.index;
@@ -77,6 +113,10 @@ public class BTree {
     }
 }
 
+/**
+ * Class used to represent a block in a B-Tree. Holds many of the insertion and deletion logic,
+ * and should never be directly manipulated by a user.
+ */
 class BTreeNode {
     protected final int minSize;
     protected int childrenCount;
@@ -87,6 +127,11 @@ class BTreeNode {
     protected BTreeNode[] keys;
     protected int parentIndex;
 
+    /**
+     * Initializes a BTreeNode of a given order.
+     *
+     * @param order the order of the B-Tree
+     */
     BTreeNode(int order) {
         vals = new int[order]; // cap + 1 to allow for insertion before split
 
@@ -99,14 +144,13 @@ class BTreeNode {
         minSize = (order - 1) / 2;
     }
 
-    BTreeNode(int order, boolean isNewRoot) {
-        this(order);
-
-        if (isNewRoot) {
-            keys = new BTreeNode[order + 1];
-        }
-    }
-
+    /**
+     * Initializes a BTreeNode given a previous array of values.
+     *
+     * @param order the order of the B-Tree
+     * @param vals an existing array of values
+     * @param size the size (current capacity) of the array
+     */
     BTreeNode(int order, int[] vals, int size) {
         assert (vals.length == order);
 
@@ -120,6 +164,14 @@ class BTreeNode {
         minSize = (order - 1) / 2;
     }
 
+    /**
+     * Initializes a BTreeNode given a previous array of values and a previous array of keys.
+     *
+     * @param order the order of the B-Tree
+     * @param vals an existing array of values
+     * @param children an existing array of keys
+     * @param size the size (current capacity) of both arrays
+     */
     BTreeNode(int order, int[] vals, BTreeNode[] children, int size) {
         this(order, vals, size);
         this.keys = children;
@@ -135,11 +187,20 @@ class BTreeNode {
         }
     }
 
+    /**
+     * Sets the parent node to a new BTreeNode.
+     *
+     * @param parent the new parent
+     */
     void setParent(BTreeNode parent) {
         this.parent = parent;
     }
 
-    // use binary search to find insertion point
+    /**
+     * Finds the hypothetical insertion point of a new value.
+     * @param val the value to insert
+     * @return returns a valid insertion point for a new value.
+     */
     int bisect(int val) {
         int lo = 0;
         int hi = size;
@@ -156,12 +217,28 @@ class BTreeNode {
         return lo;
     }
 
+    /**
+     * Inserts a new value into the BTreeNode, and restructures if necessary.
+     *
+     * @param val the value to insert
+     * @return BTreeNode instance if new root is created, null otherwise.
+     */
     BTreeNode insert(int val) {
         assert isLeaf();
 
         return insert(val, null, null);
     }
 
+    /**
+     * Inserts a new value (with its left and right children) into the BTreeNode,
+     * and restructures if necessary. Unsafe for direct insertion, as it overwrites
+     * adjacent keys.
+     *
+     * @param val the value to insert
+     * @param left the left side children
+     * @param right the right side children
+     * @return returns BTreeNode instance if new root inserted, otherwise null.
+     */
     protected BTreeNode insert(int val, BTreeNode left, BTreeNode right) {
         int index;
 
@@ -226,7 +303,7 @@ class BTreeNode {
             newLeft.parentIndex = this.parentIndex + 1;
 
             if (parent == null) {
-                parent = new BTreeNode(size, true);
+                setParent(new BTreeNode(size));
                 parent.insert(vals[median], newLeft, newRight);
                 return parent;
             }
@@ -238,15 +315,32 @@ class BTreeNode {
         return null;
     }
 
+    /**
+     * Checks whether BTreeNode instance is a leaf.
+     *
+     * @return returns true if a leaf, otherwise false.
+     */
     boolean isLeaf() {
         return childrenCount == 0;
     }
 
+    /**
+     * Given a value, returns a valid child node value for insertion.
+     *
+     * @param val the value to insert.
+     * @return a valid child for insertion of val.
+     */
     BTreeNode getChild(int val) {
         int index = bisect(val);
         return keys[index];
     }
 
+    /**
+     * Find the node and index of a given value, if it exists.
+     *
+     * @param val the value to find.
+     * @return returns a Location object upon finding value. returns null upon exhausting search.
+     */
     Location find(int val) {
         int index = bisect(val);
         if (index < size) {
@@ -257,11 +351,16 @@ class BTreeNode {
         if (keys[index] != null) {
             return keys[index].find(val);
         } else {
-            return new Location(-1, null);
+            return null;
         }
     }
 
-    // merges with sibling and separator
+    /**
+     * Merges node with a separator and another node (presumably right side neighbor).
+     *
+     * @param sibling the sibling to merge into the node.
+     * @param sep the separator to add to the node.
+     */
     protected void merge(BTreeNode sibling, int sep) {
         // asserts valid merge scenario
         assert(minSize == size && sibling.size < minSize);
@@ -279,7 +378,7 @@ class BTreeNode {
             vals[size] = sibVals[i];
             keys[size] = key;
             if (key != null) {
-                key.parent = this;
+                key.setParent(this);
                 key.parentIndex = size;
             }
             size++;
@@ -288,11 +387,16 @@ class BTreeNode {
         var key = sibKeys[sibSize];
         keys[sibSize] = key;
         if (key != null) {
-            key.parent = this;
+            key.setParent(this);
             key.parentIndex = sibSize;
         }
     }
 
+    /**
+     * Deletes the value at an index in the B-Tree, then restructures if needed.
+     *
+     * @param index the index at which to delete.
+     */
     void delete(int index) {
         assert(size > index);
 
@@ -307,7 +411,7 @@ class BTreeNode {
                 // if parent empty, return child as new root or replace
                 if (parent.size == 0) {
                     var oldParent = parent;
-                    parent = oldParent.parent;
+                    setParent(oldParent.parent);
                     if (parent != null) {
                         parent.keys[oldParent.parentIndex] = this;
                     }
@@ -331,7 +435,13 @@ class BTreeNode {
         }
     }
 
+    /**
+     * Rebalances node when below the minimum size. Follows B-Tree rebalancing procedures to ensure a
+     * well-formed tree.
+     */
     void rebalance() {
+        assert (size < minSize);
+
         if (parentIndex != 0) {
             var leftAdjacent = parent.keys[parentIndex - 1];
 
@@ -383,10 +493,18 @@ class BTreeNode {
     }
 }
 
+/**
+ * Class used to represent the location of a value in a B-Tree
+ */
 class Location {
     int index;
     BTreeNode node;
 
+    /**
+     * Initializes a Location object with a given index and node.
+     * @param index the index of the value
+     * @param node the node of the value
+     */
     Location(int index, BTreeNode node) {
         this.index = index;
         this.node = node;
