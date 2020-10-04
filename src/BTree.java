@@ -33,7 +33,14 @@ public class BTree {
         var node = loc.node;
         var index = loc.index;
         if (node != null) {
+            node.delete(index);
 
+            // drop current root if empty and non-leaf
+            if (root.size == 0) {
+                if (!root.isLeaf()) {
+                    root = root.keys[0];
+                }
+            }
         }
     }
 
@@ -57,6 +64,12 @@ public class BTree {
         System.out.println(b);
 
         b.insert(3);
+        System.out.println(b);
+
+        b.delete(3);
+        System.out.println(b);
+
+        b.delete(3);
         System.out.println(b);
 
         System.out.println(b.contains(2));
@@ -290,6 +303,15 @@ class BTreeNode {
             // if undersized and non-root
             if (size < minSize && parent != null) {
                 rebalance();
+
+                // if parent empty, return child as new root or replace
+                if (parent.size == 0) {
+                    var oldParent = parent;
+                    parent = oldParent.parent;
+                    if (parent != null) {
+                        parent.keys[oldParent.parentIndex] = this;
+                    }
+                }
             }
         } else {
             var right = keys[index + 1];
@@ -303,7 +325,7 @@ class BTreeNode {
                 left.delete(left.size - 1);
             }
 
-            if (size < minSize) {
+            if (size < minSize && parent != null) {
                 rebalance();
             }
         }
@@ -324,11 +346,13 @@ class BTreeNode {
         if (rightAdjacent.size > minSize) {
             insert(parent.vals[parentIndex]);
             parent.vals[parentIndex] = rightAdjacent.vals[0];
+
             rightAdjacent.delete(0);
         } else {
             merge(rightAdjacent, parent.vals[parentIndex]);
-            System.arraycopy(parent.vals, parentIndex + 2, parent.vals, parentIndex + 1, parent.size - parentIndex - 2);
-            System.arraycopy(parent.keys, parentIndex + 2, parent.keys, parentIndex + 1, parent.size - parentIndex - 1);
+            System.arraycopy(parent.vals, parentIndex + 2, parent.vals, parentIndex + 1, parent.vals.length - parentIndex - 2);
+            System.arraycopy(parent.keys, parentIndex + 2, parent.keys, parentIndex + 1, parent.keys.length - parentIndex - 2);
+
             parent.size--;
         }
     }
