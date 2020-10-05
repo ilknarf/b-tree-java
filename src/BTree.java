@@ -107,8 +107,14 @@ public class BTree {
                 System.out.println(vals[i] + " missing");
             }
         }
-
         System.out.println("finished missing check");
+
+        System.out.println("begin deleting");
+        for (int i = 0; i < length; i++) {
+            b.delete(vals[i]);
+        }
+        System.out.println("finished deleting");
+
         System.out.println("done");
     }
 }
@@ -446,7 +452,7 @@ class BTreeNode {
             var leftAdjacent = parent.keys[parentIndex - 1];
 
             if (leftAdjacent.size > minSize) {
-                parent.vals[parentIndex] = leftAdjacent.vals[size - 1];
+                parent.vals[parentIndex] = leftAdjacent.vals[leftAdjacent.size - 1];
                 leftAdjacent.delete(size - 1);
                 insert(parent.vals[parentIndex]);
             }
@@ -460,10 +466,12 @@ class BTreeNode {
             insert(parent.vals[parentIndex]);
         } else {
             merge(rightAdjacent, parent.vals[parentIndex]);
+
             System.arraycopy(parent.vals, parentIndex + 2, parent.vals, parentIndex + 1, parent.vals.length - parentIndex - 2);
             System.arraycopy(parent.keys, parentIndex + 2, parent.keys, parentIndex + 1, parent.keys.length - parentIndex - 2);
 
             parent.size--;
+            parent.childrenCount--;
         }
     }
 
