@@ -89,7 +89,7 @@ public class BTree {
 
     public static void main(String[] args) {
         var b = new BTree(3);
-        final int length = 8000;
+        final int length = 10000;
 
         var vals = new int[length];
 
@@ -120,63 +120,6 @@ public class BTree {
         System.out.println(b);
 
         System.out.println("done");
-
-//        b.insert(107);
-//        System.out.println(b);
-//        b.insert(462);
-//        System.out.println(b);
-//        b.insert(408);
-//        System.out.println(b);
-//        b.insert(477);
-//        System.out.println(b);
-//        b.insert(775);
-//        System.out.println(b);
-//        b.insert(521);
-//        System.out.println(b);
-//        b.insert(119);
-//        System.out.println(b);
-//        b.insert(247);
-//        System.out.println(b);
-//        b.delete(107);
-//        System.out.println(b);
-//        b.delete(462);
-//        System.out.println(b);
-//        b.delete(408);
-//        System.out.println(b);
-//        b.delete(477);
-//        System.out.println(b);
-//        b.delete(775);
-//        System.out.println(b);
-//        b.delete(521);
-//        System.out.println(b);
-//        b.delete(119);
-//        System.out.println(b);
-//        b.delete(247);
-//        System.out.println(b);
-//        b.insert(8);
-//        System.out.println(b);
-//        b.insert(2);
-//        System.out.println(b);
-//        b.insert(1);
-//        System.out.println(b);
-//        b.insert(6);
-//        System.out.println(b);
-//        b.insert(7);
-//        System.out.println(b);
-//        b.delete(5);
-//        System.out.println(b);
-//        b.delete(3);
-//        System.out.println(b);
-//        b.delete(8);
-//        System.out.println(b);
-//        b.delete(2);
-//        System.out.println(b);
-//        b.delete(1);
-//        System.out.println(b);
-//        b.delete(6);
-//        System.out.println(b);
-//        b.delete(7);
-//        System.out.println(b);
     }
 }
 
@@ -511,6 +454,12 @@ class BTreeNode {
         }
     }
 
+    /**
+     * Finds the greatest smaller child of the value at the index.
+     * @param index The index to find the greatest smaller child for.
+     * @return returns a Location object corresponding with the smallest item on the left child
+     *         of the value at the index.
+     */
     Location findLargestLtChild(int index) {
         assert(index < size);
 
@@ -527,6 +476,12 @@ class BTreeNode {
         return new Location(left.size - 1, left);
     }
 
+    /**
+     * Finds the smallest greater child of the value at the index.
+     * @param index The index to find the smallest greater child for.
+     * @return returns a Location object corresponding with the smallest item on the right child
+     *         of the value at index.
+     */
     Location findSmallestGtChild(int index) {
         assert(index < size);
 
