@@ -88,34 +88,75 @@ public class BTree {
     }
 
     public static void main(String[] args) {
-        var b = new BTree(8);
+        var b = new BTree(3);
         final int length = 10000;
 
-        var vals = new int[length];
+//        var vals = new int[length];
+//
+//        System.out.println("begin insertion");
+//        for (int i = 0; i < length; i++) {
+//            int val = i;
+//            b.insert(i);
+//            vals[i] = i;
+//        }
+//        System.out.println("finished insertion");
+//
+//        System.out.println("begin missing check:");
+//        for (int i = 0; i < length; i++) {
+//            if (!b.contains(vals[i])) {
+//                System.out.println(vals[i] + " missing");
+//            }
+//        }
+//        System.out.println("finished missing check");
+//
+//        System.out.println("begin deleting");
+//        for (int i = 0; i < length; i++) {
+//            b.delete(vals[i]);
+//        }
+//        System.out.println("finished deleting");
+//
+//        System.out.println("done");
 
-        System.out.println("begin insertion");
-        for (int i = 0; i < length; i++) {
-            int val = (int) (Math.random() * 10) + 1;
-            b.insert(val);
-            vals[i] = val;
-        }
-        System.out.println("finished insertion");
-
-        System.out.println("begin missing check:");
-        for (int i = 0; i < length; i++) {
-            if (!b.contains(vals[i])) {
-                System.out.println(vals[i] + " missing");
-            }
-        }
-        System.out.println("finished missing check");
-
-        System.out.println("begin deleting");
-        for (int i = 0; i < length; i++) {
-            b.delete(vals[i]);
-        }
-        System.out.println("finished deleting");
-
-        System.out.println("done");
+//        b.insert(5);
+//        System.out.println(b);
+//        b.insert(3);
+//        System.out.println(b);
+//        b.insert(8);
+//        System.out.println(b);
+//        b.delete(5);
+//        System.out.println(b);
+//        b.delete(3);
+//        System.out.println(b);
+//        b.delete(8);
+//        System.out.println(b);
+        b.insert(5);
+        System.out.println(b);
+        b.insert(3);
+        System.out.println(b);
+        b.insert(8);
+        System.out.println(b);
+        b.insert(2);
+        System.out.println(b);
+        b.insert(1);
+        System.out.println(b);
+        b.insert(6);
+        System.out.println(b);
+        b.insert(7);
+        System.out.println(b);
+        b.delete(5);
+        System.out.println(b);
+        b.delete(3);
+        System.out.println(b);
+        b.delete(8);
+        System.out.println(b);
+        b.delete(2);
+        System.out.println(b);
+        b.delete(1);
+        System.out.println(b);
+        b.delete(6);
+        System.out.println(b);
+        b.delete(7);
+        System.out.println(b);
     }
 }
 
@@ -125,7 +166,7 @@ public class BTree {
  */
 class BTreeNode {
     protected final int minSize;
-    protected int childrenCount;
+    protected boolean isLeaf;
 
     protected BTreeNode parent;
     protected int[] vals;
@@ -144,7 +185,7 @@ class BTreeNode {
         size = 0;
         keys = new BTreeNode[order + 1];
 
-        childrenCount = 0;
+        isLeaf = true;
         parentIndex = 0;
 
         minSize = (order - 1) / 2;
@@ -164,7 +205,7 @@ class BTreeNode {
         this.size = size;
 
         keys = new BTreeNode[order + 1];
-        childrenCount = 0;
+        isLeaf = true;
         parentIndex = 0;
 
         minSize = (order - 1) / 2;
@@ -187,8 +228,7 @@ class BTreeNode {
             if (child != null) {
                 child.setParent(this);
                 child.parentIndex = i;
-
-                childrenCount++;
+                isLeaf = false;
             }
         }
     }
@@ -230,9 +270,22 @@ class BTreeNode {
      * @return BTreeNode instance if new root is created, null otherwise.
      */
     BTreeNode insert(int val) {
-        assert isLeaf();
+        assert(isLeaf());
 
-        return insert(val, null, null);
+        int index = bisect(val);
+        int lengthToCopy = size - index;
+        if(lengthToCopy > 0) {
+            System.arraycopy(vals, index, vals, index + 1, lengthToCopy);
+        }
+
+        size++;
+        vals[index] = val;
+
+        if (size == vals.length) {
+            return split();
+        }
+
+        return null;
     }
 
     /**
@@ -247,53 +300,61 @@ class BTreeNode {
     protected BTreeNode insert(int val, BTreeNode left, BTreeNode right) {
         int index;
 
-        if (left != null){
-            index = left.parentIndex;
-        } else {
-            index = bisect(val);
-        }
-
-        if (keys[index] != null) {
-            childrenCount--;
-        }
+        index = left.parentIndex;
+        isLeaf = false;
 
         // make space for new value and key
         int lengthToCopy = size - index;
+        size++;
+
         if (lengthToCopy > 0) {
             System.arraycopy(vals, index, vals, index + 1, lengthToCopy);
             if (keys != null) {
                 System.arraycopy(keys, index, keys, index + 1, lengthToCopy + 1);
             }
+
+            for (int i = index + 1; i < size + 1; i++) {
+                keys[i].parentIndex++;
+            }
         }
 
-        size++;
         vals[index] = val;
         keys[index] = left;
         keys[index + 1] = right;
 
-        if (left != null) {
-            left.setParent(this);
-            left.parentIndex = index;
-            childrenCount++;
-        }
+        left.setParent(this);
+        left.parentIndex = index;
 
-        if (right != null) {
-            right.setParent(this);
-            right.parentIndex = index + 1;
-            childrenCount++;
-        }
+        right.setParent(this);
+        right.parentIndex = index + 1;
+
 
         if (size == vals.length) {
-            int median = size / 2;
+            return split();
+        }
 
-            var leftVals = new int[size];
-            int leftLength = median;
-            System.arraycopy(vals, 0, leftVals, 0, leftLength);
+        return null;
+    }
 
-            var rightVals = new int[size];
-            int rightLength = size - median - 1;
-            System.arraycopy(vals, median + 1, rightVals, 0, rightLength);
+    /**
+     * Splits a BTreeNode and inserts into parent.
+     * @return returns insertion results in the case of a new parent
+     */
+    protected BTreeNode split() {
+        int median = size / 2;
 
+        var leftVals = new int[size];
+        int leftLength = median;
+        System.arraycopy(vals, 0, leftVals, 0, leftLength);
+
+        var rightVals = new int[size];
+        int rightLength = size - median - 1;
+        System.arraycopy(vals, median + 1, rightVals, 0, rightLength);
+
+        BTreeNode newLeft;
+        BTreeNode newRight;
+
+        if (!isLeaf()) {
             var leftChildren = new BTreeNode[keys.length];
             System.arraycopy(keys, 0, leftChildren, 0, leftLength + 1);
 
@@ -301,24 +362,25 @@ class BTreeNode {
             System.arraycopy(keys, median + 1, rightChildren, 0, rightLength + 1);
 
             // build new split child nodes
-            var newLeft = new BTreeNode(size, leftVals, leftChildren, leftLength);
-            var newRight = new BTreeNode(size, rightVals, rightChildren, rightLength);
-
-            size--;
-            if (parent == null) {
-                setParent(new BTreeNode(vals.length));
-                parent.insert(vals[median], newLeft, newRight);
-                return parent;
-            }
-
-            // insert new split index into parent;
-
-            newLeft.parentIndex = parentIndex;
-            newRight.parentIndex = parentIndex + 1;
-            return parent.insert(vals[median], newLeft, newRight);
+            newLeft = new BTreeNode(size, leftVals, leftChildren, leftLength);
+            newRight = new BTreeNode(size, rightVals, rightChildren, rightLength);
+        } else {
+            newLeft = new BTreeNode(size, leftVals, leftLength);
+            newRight = new BTreeNode(size, rightVals, rightLength);
         }
 
-        return null;
+        newLeft.parentIndex = parentIndex;
+        newRight.parentIndex = parentIndex + 1;
+
+        if (parent == null) {
+            setParent(new BTreeNode(vals.length));
+            parent.insert(vals[median], newLeft, newRight);
+            return parent;
+        }
+
+        // insert new split index into parent;
+
+        return parent.insert(vals[median], newLeft, newRight);
     }
 
     /**
@@ -327,7 +389,7 @@ class BTreeNode {
      * @return returns true if a leaf, otherwise false.
      */
     boolean isLeaf() {
-        return childrenCount == 0;
+        return isLeaf;
     }
 
     /**
@@ -349,16 +411,14 @@ class BTreeNode {
      */
     Location find(int val) {
         int index = bisect(val);
-        if (index < size) {
-            if (vals[index] == val) {
-                return new Location(index, this);
-            }
-        }
-        if (keys[index] != null) {
+
+        if (index < size && vals[index] == val) {
+            return new Location(index, this);
+        } else if (keys[index] != null) {
             return keys[index].find(val);
-        } else {
-            return null;
         }
+
+        return null;
     }
 
     /**
@@ -386,6 +446,7 @@ class BTreeNode {
             if (key != null) {
                 key.setParent(this);
                 key.parentIndex = size;
+                isLeaf = false;
             }
             size++;
         }
@@ -406,23 +467,9 @@ class BTreeNode {
     void delete(int index) {
         assert(size > index);
 
-        if(isLeaf()) {
+        if (isLeaf()) {
             System.arraycopy(vals, index + 1, vals, index, vals.length - index - 1);
             size--;
-
-            // if undersized and non-root
-            if (size < minSize && parent != null) {
-                rebalance();
-
-                // if parent empty, return child as new root or replace
-                if (parent.size == 0) {
-                    var oldParent = parent;
-                    setParent(oldParent.parent);
-                    if (parent != null) {
-                        parent.keys[oldParent.parentIndex] = this;
-                    }
-                }
-            }
         } else {
             var right = keys[index + 1];
 
@@ -434,10 +481,11 @@ class BTreeNode {
                 vals[index] = left.vals[left.size - 1];
                 left.delete(left.size - 1);
             }
+        }
 
-            if (size < minSize && parent != null) {
-                rebalance();
-            }
+        // if undersized and non-root
+        if (size < minSize && parent != null) {
+            rebalance();
         }
     }
 
@@ -447,6 +495,10 @@ class BTreeNode {
      */
     void rebalance() {
         assert (size < minSize);
+
+        if (size == 0 && !isLeaf()) {
+            return;
+        }
 
         if (parentIndex != 0) {
             var leftAdjacent = parent.keys[parentIndex - 1];
@@ -460,18 +512,30 @@ class BTreeNode {
 
         var rightAdjacent = parent.keys[parentIndex + 1];
         if (rightAdjacent.size > minSize) {
-
             parent.vals[parentIndex] = rightAdjacent.vals[0];
             rightAdjacent.delete(0);
             insert(parent.vals[parentIndex]);
         } else {
             merge(rightAdjacent, parent.vals[parentIndex]);
 
+            // delete right adjacent value and keys
             System.arraycopy(parent.vals, parentIndex + 2, parent.vals, parentIndex + 1, parent.vals.length - parentIndex - 2);
             System.arraycopy(parent.keys, parentIndex + 2, parent.keys, parentIndex + 1, parent.keys.length - parentIndex - 2);
 
             parent.size--;
-            parent.childrenCount--;
+
+            for (int i = parentIndex + 1; i < parent.size + 1; i++) {
+                parent.keys[i].parentIndex--;
+            }
+
+            if (parent.size == 0) {
+                var oldParent = parent;
+                setParent(oldParent.parent);
+                if (parent != null) {
+                    parent.keys[oldParent.parentIndex] = this;
+                }
+            }
+
         }
     }
 
