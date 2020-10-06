@@ -82,7 +82,7 @@ public class BTree {
     }
 
     public static void main(String[] args) {
-        var b = new BTree(7);
+        var b = new BTree(3);
         final int length = 700;
 
         var vals = new int[length];
@@ -118,36 +118,6 @@ public class BTree {
         System.out.println(b);
 
         System.out.println("done");
-
-//        b.insert(271);
-//        System.out.println(b);
-//        b.insert(84);
-//        System.out.println(b);
-//        b.insert(855);
-//        System.out.println(b);
-//        b.insert(947);
-//        System.out.println(b);
-//        b.insert(536);
-//        System.out.println(b);
-//        b.insert(514);
-//        System.out.println(b);
-//        b.insert(762);
-//        System.out.println(b);
-//
-//        b.delete(271);
-//        System.out.println(b);
-//        b.delete(84);
-//        System.out.println(b);
-//        b.delete(855);
-//        System.out.println(b);
-//        b.delete(947);
-//        System.out.println(b);
-//        b.delete(536);
-//        System.out.println(b);
-//        b.delete(514);
-//        System.out.println(b);
-//        b.delete(762);
-//        System.out.println(b);
     }
 }
 
