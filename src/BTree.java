@@ -89,33 +89,37 @@ public class BTree {
 
     public static void main(String[] args) {
         var b = new BTree(3);
-        final int length = 10000;
+        final int length = 1000;
 
-//        var vals = new int[length];
-//
-//        System.out.println("begin insertion");
-//        for (int i = 0; i < length; i++) {
-//            int val = i;
-//            b.insert(i);
-//            vals[i] = i;
-//        }
-//        System.out.println("finished insertion");
-//
-//        System.out.println("begin missing check:");
-//        for (int i = 0; i < length; i++) {
-//            if (!b.contains(vals[i])) {
-//                System.out.println(vals[i] + " missing");
-//            }
-//        }
-//        System.out.println("finished missing check");
-//
-//        System.out.println("begin deleting");
-//        for (int i = 0; i < length; i++) {
-//            b.delete(vals[i]);
-//        }
-//        System.out.println("finished deleting");
-//
-//        System.out.println("done");
+        var vals = new int[length];
+
+        System.out.println("begin insertion");
+        for (int i = 0; i < length; i++) {
+            int val = i;
+            b.insert(i);
+            System.out.println("inserting " + i);
+            vals[i] = i;
+        }
+        System.out.println("finished insertion");
+
+        int counter = 0;
+        System.out.println("begin missing check:");
+        for (int i = 0; i < length; i++) {
+            if (!b.contains(vals[i])) {
+                System.out.println(vals[i] + " missing");
+                counter++;
+            }
+        }
+        System.out.println("finished missing check: missing " + counter + " items");
+
+        System.out.println("begin deleting");
+        for (int i = 0; i < length; i++) {
+            b.delete(vals[i]);
+        }
+        System.out.println("finished deleting");
+        System.out.println(b);
+
+        System.out.println("done");
 
 //        b.insert(5);
 //        System.out.println(b);
@@ -129,34 +133,34 @@ public class BTree {
 //        System.out.println(b);
 //        b.delete(8);
 //        System.out.println(b);
-        b.insert(5);
-        System.out.println(b);
-        b.insert(3);
-        System.out.println(b);
-        b.insert(8);
-        System.out.println(b);
-        b.insert(2);
-        System.out.println(b);
-        b.insert(1);
-        System.out.println(b);
-        b.insert(6);
-        System.out.println(b);
-        b.insert(7);
-        System.out.println(b);
-        b.delete(5);
-        System.out.println(b);
-        b.delete(3);
-        System.out.println(b);
-        b.delete(8);
-        System.out.println(b);
-        b.delete(2);
-        System.out.println(b);
-        b.delete(1);
-        System.out.println(b);
-        b.delete(6);
-        System.out.println(b);
-        b.delete(7);
-        System.out.println(b);
+//        b.insert(5);
+//        System.out.println(b);
+//        b.insert(3);
+//        System.out.println(b);
+//        b.insert(8);
+//        System.out.println(b);
+//        b.insert(2);
+//        System.out.println(b);
+//        b.insert(1);
+//        System.out.println(b);
+//        b.insert(6);
+//        System.out.println(b);
+//        b.insert(7);
+//        System.out.println(b);
+//        b.delete(5);
+//        System.out.println(b);
+//        b.delete(3);
+//        System.out.println(b);
+//        b.delete(8);
+//        System.out.println(b);
+//        b.delete(2);
+//        System.out.println(b);
+//        b.delete(1);
+//        System.out.println(b);
+//        b.delete(6);
+//        System.out.println(b);
+//        b.delete(7);
+//        System.out.println(b);
     }
 }
 
@@ -453,6 +457,7 @@ class BTreeNode {
 
         var key = sibKeys[sibSize];
         keys[sibSize] = key;
+
         if (key != null) {
             key.setParent(this);
             key.parentIndex = sibSize;
@@ -533,24 +538,26 @@ class BTreeNode {
         }
 
         if (parentIndex != 0) {
-            var leftAdjacent = parent.findLargestLtChild(parentIndex - 1).node;
+            var leftAdjacent = parent.keys[parentIndex - 1];
+            var largestLeft = parent.findLargestLtChild(parentIndex - 1).node;
 
-            if (leftAdjacent.size > minSize) {
-                parent.vals[parentIndex] = leftAdjacent.vals[leftAdjacent.size - 1];
-                leftAdjacent.delete(size - 1);
+            if (!leftAdjacent.isLeaf() || leftAdjacent.size > minSize) {
+                insert(parent.vals[parentIndex - 1]);
 
-                insert(parent.vals[parentIndex]);
+                parent.vals[parentIndex - 1] = largestLeft.vals[largestLeft.size - 1];
+                largestLeft.delete(largestLeft.size - 1);
             } else {
                 leftAdjacent.mergeAndDelete();
             }
         } else {
-            var rightAdjacent = parent.findSmallestGtChild(parentIndex).node;
+            var rightAdjacent = parent.keys[parentIndex + 1];
+            var rightMinimum = parent.findSmallestGtChild(parentIndex).node;
 
-            if (rightAdjacent.size > minSize) {
-                parent.vals[parentIndex] = rightAdjacent.vals[0];
-                rightAdjacent.delete(0);
-
+            if (!rightAdjacent.isLeaf() || rightAdjacent.size > minSize) {
                 insert(parent.vals[parentIndex]);
+
+                parent.vals[parentIndex] = rightMinimum.vals[0];
+                rightMinimum.delete(0);
             } else {
                 mergeAndDelete();
             }
@@ -565,7 +572,7 @@ class BTreeNode {
         merge(rightAdjacent, parent.vals[parentIndex]);
 
         // delete right adjacent value and keys
-        System.arraycopy(parent.vals, parentIndex + 2, parent.vals, parentIndex + 1, parent.vals.length - parentIndex - 2);
+        System.arraycopy(parent.vals, parentIndex + 1, parent.vals, parentIndex, parent.vals.length - parentIndex - 1);
         System.arraycopy(parent.keys, parentIndex + 2, parent.keys, parentIndex + 1, parent.keys.length - parentIndex - 2);
 
         parent.size--;
