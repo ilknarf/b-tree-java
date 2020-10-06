@@ -84,21 +84,21 @@ public class BTree {
 
     @Override
     public String toString() {
-        return "[" + root.toString() + "]";
+        return root.toString();
     }
 
     public static void main(String[] args) {
         var b = new BTree(3);
-        final int length = 1000;
+        final int length = 8000;
 
         var vals = new int[length];
 
         System.out.println("begin insertion");
         for (int i = 0; i < length; i++) {
-            int val = i;
-            b.insert(i);
-            System.out.println("inserting " + i);
-            vals[i] = i;
+            int val = (int) (Math.random() * 1000);
+            b.insert(val);
+            System.out.println("inserting " + val);
+            vals[i] = val;
         }
         System.out.println("finished insertion");
 
@@ -121,21 +121,37 @@ public class BTree {
 
         System.out.println("done");
 
-//        b.insert(5);
+//        b.insert(107);
 //        System.out.println(b);
-//        b.insert(3);
+//        b.insert(462);
 //        System.out.println(b);
-//        b.insert(8);
+//        b.insert(408);
 //        System.out.println(b);
-//        b.delete(5);
+//        b.insert(477);
 //        System.out.println(b);
-//        b.delete(3);
+//        b.insert(775);
 //        System.out.println(b);
-//        b.delete(8);
+//        b.insert(521);
 //        System.out.println(b);
-//        b.insert(5);
+//        b.insert(119);
 //        System.out.println(b);
-//        b.insert(3);
+//        b.insert(247);
+//        System.out.println(b);
+//        b.delete(107);
+//        System.out.println(b);
+//        b.delete(462);
+//        System.out.println(b);
+//        b.delete(408);
+//        System.out.println(b);
+//        b.delete(477);
+//        System.out.println(b);
+//        b.delete(775);
+//        System.out.println(b);
+//        b.delete(521);
+//        System.out.println(b);
+//        b.delete(119);
+//        System.out.println(b);
+//        b.delete(247);
 //        System.out.println(b);
 //        b.insert(8);
 //        System.out.println(b);
@@ -314,10 +330,10 @@ class BTreeNode {
         if (lengthToCopy > 0) {
             System.arraycopy(vals, index, vals, index + 1, lengthToCopy);
             if (keys != null) {
-                System.arraycopy(keys, index, keys, index + 1, lengthToCopy + 1);
+                System.arraycopy(keys, index + 1, keys, index + 2, lengthToCopy);
             }
 
-            for (int i = index + 1; i < size + 1; i++) {
+            for (int i = index + 2; i < size + 1; i++) {
                 keys[i].parentIndex++;
             }
         }
@@ -379,6 +395,7 @@ class BTreeNode {
         if (parent == null) {
             setParent(new BTreeNode(vals.length));
             parent.insert(vals[median], newLeft, newRight);
+
             return parent;
         }
 
@@ -456,11 +473,11 @@ class BTreeNode {
         }
 
         var key = sibKeys[sibSize];
-        keys[sibSize] = key;
+        keys[size] = key;
 
         if (key != null) {
             key.setParent(this);
-            key.parentIndex = sibSize;
+            key.parentIndex = size;
         }
     }
 
@@ -519,6 +536,7 @@ class BTreeNode {
 
         var right = keys[index + 1];
 
+
         while(!right.isLeaf()) {
             right = right.keys[0];
         }
@@ -576,9 +594,9 @@ class BTreeNode {
         System.arraycopy(parent.keys, parentIndex + 2, parent.keys, parentIndex + 1, parent.keys.length - parentIndex - 2);
 
         parent.size--;
-
+        parent.keys[parent.size + 1] = null;
         for (int i = parentIndex + 1; i < parent.size + 1; i++) {
-            parent.keys[i].parentIndex--;
+            parent.keys[i].parentIndex = i;
         }
 
         if (parent.size == 0) {
@@ -587,6 +605,7 @@ class BTreeNode {
 
             if (parent != null) {
                 parent.keys[oldParent.parentIndex] = this;
+                parentIndex = oldParent.parentIndex;
             }
         }
     }
@@ -598,7 +617,7 @@ class BTreeNode {
 
         for (int i = 0; i < size; i++) {
             sb.append(" (");
-            if (keys != null && keys[i] != null) {
+            if (keys[i] != null) {
                 sb.append(keys[i].toString());
             }
             sb.append(") ");
@@ -607,7 +626,7 @@ class BTreeNode {
         }
 
         sb.append(" (");
-        if (size > 0 && keys != null && keys[size] != null) {
+        if (size > 0 && keys[size] != null) {
             sb.append(keys[size].toString());
         }
         sb.append(") ");
