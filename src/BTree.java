@@ -558,7 +558,7 @@ class BTreeNode {
     }
 
     /**
-     *
+     * Merges with right neighbor and separator, then deletes from parent.
      */
     protected void mergeAndDelete() {
         var rightAdjacent = parent.keys[parentIndex + 1];
