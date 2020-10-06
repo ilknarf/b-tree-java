@@ -471,13 +471,13 @@ class BTreeNode {
             System.arraycopy(vals, index + 1, vals, index, vals.length - index - 1);
             size--;
         } else {
-            var right = keys[index + 1];
+            var right = findSmallestGtChild(index).node;
 
             if (right.size > right.minSize) {
                 vals[index] = right.vals[0];
                 right.delete(0);
             } else {
-                var left = keys[index];
+                var left = findLargestLtChild(index).node;
                 vals[index] = left.vals[left.size - 1];
                 left.delete(left.size - 1);
             }
@@ -487,6 +487,38 @@ class BTreeNode {
         if (size < minSize && parent != null) {
             rebalance();
         }
+    }
+
+    Location findLargestLtChild(int index) {
+        assert(index < size);
+
+        if(isLeaf()) {
+            return new Location(size - 1, this);
+        }
+
+        var left = keys[index];
+
+        while(!left.isLeaf()) {
+            left = left.keys[left.size];
+        }
+
+        return new Location(left.size - 1, left);
+    }
+
+    Location findSmallestGtChild(int index) {
+        assert(index < size);
+
+        if (isLeaf()) {
+            return new Location(0, this);
+        }
+
+        var right = keys[index + 1];
+
+        while(!right.isLeaf()) {
+            right = right.keys[0];
+        }
+
+        return new Location (0, right);
     }
 
     /**
@@ -501,41 +533,54 @@ class BTreeNode {
         }
 
         if (parentIndex != 0) {
-            var leftAdjacent = parent.keys[parentIndex - 1];
+            var leftAdjacent = parent.findLargestLtChild(parentIndex - 1).node;
 
             if (leftAdjacent.size > minSize) {
                 parent.vals[parentIndex] = leftAdjacent.vals[leftAdjacent.size - 1];
                 leftAdjacent.delete(size - 1);
+
                 insert(parent.vals[parentIndex]);
+            } else {
+                leftAdjacent.mergeAndDelete();
+            }
+        } else {
+            var rightAdjacent = parent.findSmallestGtChild(parentIndex).node;
+
+            if (rightAdjacent.size > minSize) {
+                parent.vals[parentIndex] = rightAdjacent.vals[0];
+                rightAdjacent.delete(0);
+
+                insert(parent.vals[parentIndex]);
+            } else {
+                mergeAndDelete();
             }
         }
+    }
 
+    /**
+     *
+     */
+    protected void mergeAndDelete() {
         var rightAdjacent = parent.keys[parentIndex + 1];
-        if (rightAdjacent.size > minSize) {
-            parent.vals[parentIndex] = rightAdjacent.vals[0];
-            rightAdjacent.delete(0);
-            insert(parent.vals[parentIndex]);
-        } else {
-            merge(rightAdjacent, parent.vals[parentIndex]);
+        merge(rightAdjacent, parent.vals[parentIndex]);
 
-            // delete right adjacent value and keys
-            System.arraycopy(parent.vals, parentIndex + 2, parent.vals, parentIndex + 1, parent.vals.length - parentIndex - 2);
-            System.arraycopy(parent.keys, parentIndex + 2, parent.keys, parentIndex + 1, parent.keys.length - parentIndex - 2);
+        // delete right adjacent value and keys
+        System.arraycopy(parent.vals, parentIndex + 2, parent.vals, parentIndex + 1, parent.vals.length - parentIndex - 2);
+        System.arraycopy(parent.keys, parentIndex + 2, parent.keys, parentIndex + 1, parent.keys.length - parentIndex - 2);
 
-            parent.size--;
+        parent.size--;
 
-            for (int i = parentIndex + 1; i < parent.size + 1; i++) {
-                parent.keys[i].parentIndex--;
+        for (int i = parentIndex + 1; i < parent.size + 1; i++) {
+            parent.keys[i].parentIndex--;
+        }
+
+        if (parent.size == 0) {
+            var oldParent = parent;
+            setParent(oldParent.parent);
+
+            if (parent != null) {
+                parent.keys[oldParent.parentIndex] = this;
             }
-
-            if (parent.size == 0) {
-                var oldParent = parent;
-                setParent(oldParent.parent);
-                if (parent != null) {
-                    parent.keys[oldParent.parentIndex] = this;
-                }
-            }
-
         }
     }
 
